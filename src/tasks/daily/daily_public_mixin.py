@@ -106,8 +106,13 @@ class DailyPublicMixin:
             after_sleep=2,
         )
         # 步骤 4: 等待"循环结束"出现并点击（仅作为一次识别完成的角色，不需要重试）
+        try:
+            loop_timeout = int(self.config.get("自主循环最长等待时间（秒）", 1800))
+        except (TypeError, ValueError):
+            loop_timeout = 1800
+        loop_timeout = max(60, min(loop_timeout, 3600))
         if not self.wait_click_ocr(
-            match=re.compile("循环结束"), time_out=600, box=self.box.top, after_sleep=2, log=True
+            match=re.compile("循环结束"), time_out=loop_timeout, box=self.box.top, after_sleep=2, log=True
         ):
             self.log_info("自主循环步骤4未完成，退出循环", notify=True)
             return
