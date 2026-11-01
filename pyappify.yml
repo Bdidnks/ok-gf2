@@ -2,7 +2,7 @@ name: "ok-gf2"
 uac: true
 profiles:
   - name: "china"
-    git_url: "https://cnb.cool/ok-oldking/ok-gf2.git"
+    git_url: "https://github.com/Bdidnks/ok-gf2.git"
     admin: true
     main_script: "main.py"
     requires_python: "3.12"
@@ -12,7 +12,7 @@ profiles:
     # PYTHONPATH: "your/default/path" # Optional, will be "" if missing
     
   - name: "global"
-    git_url: "https://github.com/AliceJump/ok-gf2-update.git"
+    git_url: "https://github.com/Bdidnks/ok-gf2.git"
     admin: true
     main_script: "main.py"
     requires_python: "3.12"
