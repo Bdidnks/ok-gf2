@@ -106,7 +106,7 @@ jobs:
 
   sync:
     needs: test
-    if: github.event_name != 'workflow_dispatch'
+    if: github.repository == 'AliceJump/ok-gf2' && github.event_name != 'workflow_dispatch'
     runs-on: windows-latest
     permissions:
       contents: read
@@ -199,7 +199,7 @@ jobs:
 
   build:
     needs: [test, sync]
-    if: always() && needs.test.result == 'success' && (github.event_name == 'workflow_dispatch' || needs.sync.result == 'success')
+    if: always() && needs.test.result == 'success' && (github.repository != 'AliceJump/ok-gf2' || github.event_name == 'workflow_dispatch' || needs.sync.result == 'success')
     runs-on: windows-latest
     permissions:
       contents: read
@@ -293,7 +293,7 @@ jobs:
   release:
     needs: [build, sync]
     runs-on: windows-latest
-    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'repository_dispatch'
+    if: always() && needs.build.result == 'success' && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'repository_dispatch')
     permissions:
       contents: write
     steps:
@@ -330,9 +330,9 @@ jobs:
             ###  更新日志 ${{ needs.sync.outputs.start_tag }} -> ${{ needs.sync.outputs.end_tag }}:
               ${{ needs.sync.outputs.changes_with_asterisk }}
             ### 下载包说明 / Download Packages
-              * [ok-gf2-win32-china-setup-${{ steps.tag.outputs.safe_tag }}.exe](https://github.com/AliceJump/ok-gf2/releases/download/${{ steps.tag.outputs.tag }}/ok-gf2-win32-china-setup-${{ steps.tag.outputs.safe_tag }}.exe) 完整安装包（内含全部依赖，推荐国内用户或网络受限环境）/ Full installer (all dependencies included, recommended for users in China or with limited internet)
-              * [ok-gf2-win32-global-setup-${{ steps.tag.outputs.safe_tag }}.exe](https://github.com/AliceJump/ok-gf2/releases/download/${{ steps.tag.outputs.tag }}/ok-gf2-win32-global-setup-${{ steps.tag.outputs.safe_tag }}.exe) Github 源完整安装包（适合全球用户，依赖从GitHub下载）/ Github source whole setup (for global users, dependencies from GitHub)
-              * [ok-gf2-win32-online-setup-${{ steps.tag.outputs.safe_tag }}.exe](https://github.com/AliceJump/ok-gf2/releases/download/${{ steps.tag.outputs.tag }}/ok-gf2-win32-online-setup-${{ steps.tag.outputs.safe_tag }}.exe) 在线安装包（体积小，需联网下载依赖，建议先使用完整安装包）/ Online installer (small size, downloads dependencies online, recommended to use the full installer first)
+              * [ok-gf2-win32-china-setup-${{ steps.tag.outputs.safe_tag }}.exe](https://github.com/${{ github.repository }}/releases/download/${{ steps.tag.outputs.tag }}/ok-gf2-win32-china-setup-${{ steps.tag.outputs.safe_tag }}.exe) 完整安装包（内含全部依赖，推荐国内用户或网络受限环境）/ Full installer (all dependencies included, recommended for users in China or with limited internet)
+              * [ok-gf2-win32-global-setup-${{ steps.tag.outputs.safe_tag }}.exe](https://github.com/${{ github.repository }}/releases/download/${{ steps.tag.outputs.tag }}/ok-gf2-win32-global-setup-${{ steps.tag.outputs.safe_tag }}.exe) Github 源完整安装包（适合全球用户，依赖从GitHub下载）/ Github source whole setup (for global users, dependencies from GitHub)
+              * [ok-gf2-win32-online-setup-${{ steps.tag.outputs.safe_tag }}.exe](https://github.com/${{ github.repository }}/releases/download/${{ steps.tag.outputs.tag }}/ok-gf2-win32-online-setup-${{ steps.tag.outputs.safe_tag }}.exe) 在线安装包（体积小，需联网下载依赖，建议先使用完整安装包）/ Online installer (small size, downloads dependencies online, recommended to use the full installer first)
               * 不要下载SourceCode, Do Not Download the SourceCode
             ### 如果无法下载可以使用, 其他下载源 / Alternative download sources
               * [Mirror酱下载渠道](https://mirrorchyan.com/zh/projects?rid=okgf&source=ok-gf-release), 国内网页直链, 下载需要购买CD-KEY, 已有Mirror酱CD-KEY可免费下载 / Mainland China direct link, requires CD-KEY (free for existing Mirror users)
@@ -342,7 +342,7 @@ jobs:
   trigger_mirrorchyan:
     needs: release
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'repository_dispatch'
+    if: github.repository == 'AliceJump/ok-gf2' && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'repository_dispatch')
     permissions:
       actions: write
       contents: read

@@ -35,8 +35,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if ! git merge --no-edit upstream/master; then
-            git merge --abort || true
-            echo "Merge conflict: fork was left unchanged. Resolve it manually."
-            exit 1
+            mapfile -t conflicts < <(git diff --name-only --diff-filter=U)
+            if [ "${#conflicts[@]}" -eq 1 ] && [ "${conflicts[0]}" = "assets/downloads.svg" ]; then
+              git checkout --theirs -- assets/downloads.svg
+              git add assets/downloads.svg
+              git commit --no-edit
+            else
+              git merge --abort || true
+              echo "Merge conflict outside generated download statistics; fork was left unchanged."
+              exit 1
+            fi
           fi
           git push origin HEAD:master
