@@ -34,16 +34,21 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if ! git merge --no-edit upstream/master; then
-            mapfile -t conflicts < <(git diff --name-only --diff-filter=U)
-            if [ "${#conflicts[@]}" -eq 1 ] && [ "${conflicts[0]}" = "assets/downloads.svg" ]; then
-              git checkout --theirs -- assets/downloads.svg
-              git add assets/downloads.svg
-              git commit --no-edit
-            else
-              git merge --abort || true
-              echo "Merge conflict outside generated download statistics; fork was left unchanged."
-              exit 1
-            fi
+          git merge --no-commit --no-ff upstream/master || true
+          if [ ! -f "$(git rev-parse --git-path MERGE_HEAD)" ]; then
+            echo "Upstream merge did not start; fork was left unchanged."
+            exit 1
           fi
+          # Keep this fork's workflows: GITHUB_TOKEN cannot push upstream workflow edits.
+          git restore --source=HEAD --staged --worktree -- .github/workflows
+          mapfile -t conflicts < <(git diff --name-only --diff-filter=U)
+          if [ "${#conflicts[@]}" -eq 1 ] && [ "${conflicts[0]}" = "assets/downloads.svg" ]; then
+            git checkout --theirs -- assets/downloads.svg
+            git add assets/downloads.svg
+          elif [ "${#conflicts[@]}" -ne 0 ]; then
+            git merge --abort || true
+            echo "Merge conflict outside generated download statistics; fork was left unchanged."
+            exit 1
+          fi
+          git commit --no-edit
           git push origin HEAD:master
