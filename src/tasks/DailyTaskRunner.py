@@ -43,6 +43,10 @@ TaskItemWithSwitch = tuple[str, Callable[[], object], Callable[[], bool]]
 # 不做开关判定、恒执行的内置任务项。
 ALWAYS_RUN_KEYS = ("ensure_main",)
 
+# Resource farming can be useful more than once per day. Other entries in the daily plan
+# are marked complete only after their task function returns a confirmed success.
+REPEATABLE_KEYS = ("活动自律", "自动刷体力")
+
 # 四态到 UI info 键的映射，仅在 publish_info=True 时写入。
 _STATUS_INFO_MAP = (
     ("uncertain", "待核查的任务列表"),
@@ -66,6 +70,7 @@ class DailyTaskRunner:
         task_items: Iterable[TaskItem | TaskItemWithSwitch],
         ensure_main_kwargs: dict | None = None,
         publish_info: bool = False,
+        completion_store=None,
     ):
         """
         Args:
@@ -80,6 +85,7 @@ class DailyTaskRunner:
         self.task_items = list(task_items)
         self.ensure_main_kwargs = dict(ensure_main_kwargs or {"recheck_time": 2, "time_out": 90})
         self.publish_info = publish_info
+        self.completion_store = completion_store
         self.task_status = _new_task_status(self.task_items)
         self.current_task_key: str | None = None
         # {account_id: {任务名: 失败消息}}；单账户模式下 account_id 为空字符串
@@ -236,6 +242,16 @@ class DailyTaskRunner:
             self.task_status["skipped"].append(key)
             return True
 
+        account_id = self._current_account_info()["account_id"]
+        if self.completion_store is not None and key not in ALWAYS_RUN_KEYS + REPEATABLE_KEYS:
+            try:
+                if self.completion_store.is_completed(account_id, key):
+                    self.task_status["skipped"].append(key)
+                    self.task.log_info(self._tr("今日已完成，跳过任务: {key}").format(key=self._tr(key)))
+                    return True
+            except (OSError, ValueError) as error:
+                self.task.log_warning(f"读取每日完成记录失败，继续执行任务 {key}: {error}")
+
         self.current_task_key = key
         self.failure_screenshot_tasks.discard(key)
         self.final_summary["current_task"] = key
@@ -296,6 +312,11 @@ class DailyTaskRunner:
 
         self.task_status["success"].append(key)
         self.clear_task_failure(key)
+        if self.completion_store is not None and key not in ALWAYS_RUN_KEYS + REPEATABLE_KEYS:
+            try:
+                self.completion_store.mark_completed(account_id, key)
+            except (OSError, ValueError) as error:
+                self.task.log_warning(f"保存每日完成记录失败，任务 {key} 下次仍可能执行: {error}")
         self.current_task_key = None
         self.final_summary["current_task"] = ""
         return True

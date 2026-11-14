@@ -7,6 +7,8 @@
 import tempfile
 from pathlib import Path
 
+from ok.util.file import get_relative_path
+
 from src.core.BaseGfTask import BaseGfTask
 from src.tasks.AccountMixin import AccountMixin
 from src.tasks.CommunityClient import CommunityMixin
@@ -17,6 +19,7 @@ from src.tasks.daily.daily_public_mixin import DailyPublicMixin
 from src.tasks.daily.daily_reward_mixin import DailyRewardMixin
 from src.tasks.daily_summary import create_task_summary_report, open_local_path_with_default_app
 from src.tasks.DailyTaskRunner import DailyTaskRunner
+from src.tasks.daily_completion import DailyCompletionStore
 
 
 class DailyTask(
@@ -36,6 +39,8 @@ class DailyTask(
         "已确认启用游戏内全局自动功能",
         "生成汇总文件",
         "自动打开汇总文件",
+        "启用每日完成记录",
+        "每日重置小时",
         "Exit After Task",
     }
 
@@ -98,6 +103,8 @@ class DailyTask(
                 "探索领取": "自动领取边界推进探索区域的采集与派遣奖励",
                 "生成汇总文件": ("任务结束后把执行情况写成 txt 汇总\n目录：系统临时目录/ok-gf2/一键日常/"),
                 "自动打开汇总文件": "生成汇总后自动用系统默认程序打开它",
+                "启用每日完成记录": "再次运行时跳过当天已确认成功的日常任务；刷取类任务仍可重复",
+                "每日重置小时": "按本机时间计算游戏每日重置，填写 0 至 23；默认 5 点",
             }
         )
         self.default_config.update(
@@ -132,6 +139,8 @@ class DailyTask(
                 "探索领取": True,
                 "生成汇总文件": True,
                 "自动打开汇总文件": False,
+                "启用每日完成记录": True,
+                "每日重置小时": 5,
             }
         )
 
@@ -201,7 +210,16 @@ class DailyTask(
         if not self.config.get("已确认启用游戏内全局自动功能"):
             self.confirm_auto_battle_up()
         try:
-            self.daily_runner = DailyTaskRunner(self, self.build_task_plan())
+            completion_store = None
+            if self.config.get("启用每日完成记录", True):
+                try:
+                    completion_store = DailyCompletionStore(
+                        get_relative_path("configs", "daily_task_completion.json"),
+                        reset_hour=self.config.get("每日重置小时", 5),
+                    )
+                except (TypeError, ValueError) as error:
+                    self.log_warning(f"每日完成记录配置无效，本次不跳过任务: {error}")
+            self.daily_runner = DailyTaskRunner(self, self.build_task_plan(), completion_store=completion_store)
             self.daily_runner.run()
         finally:
             # 无论正常结束还是异常中断，都尝试落地汇总，便于事后排查
