@@ -156,7 +156,8 @@ An image-recognition-based automation tool for Girls' Frontline 2, with backgrou
 
 ## 💬 加入我们
 
-* **QQ 交流群**：`1033950808`（入群答案：`老王同学OK`）
+* **社区入口**：[QQ 群与 Discord](https://ok-script.com/community/?project=ok-gf2)（链接维护于 [community_links.yml](community_links.yml)）。
+* **QQ 交流群**：[少前2群 · 1033950808](https://qm.qq.com/q/oKHdK7P8lO)（入群答案：`老王同学OK`）
 
 本项目基于 [ok-script](https://github.com/ok-oldking/ok-script) 框架开发，简单易维护。欢迎有兴趣的开发者使用 [ok-script](https://github.com/ok-oldking/ok-script) 开发您自己的自动化项目。
 
